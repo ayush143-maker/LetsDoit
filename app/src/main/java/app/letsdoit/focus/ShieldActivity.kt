@@ -4,9 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import kotlinx.coroutines.delay
 
 class ShieldActivity : ComponentActivity() {
     private val pkgState = mutableStateOf("")
+    private val nonce = mutableStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,11 +45,14 @@ class ShieldActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(transparent)
         )
         pkgState.value = intent.getStringExtra("pkg") ?: ""
+        nonce.value = 1
         setContent {
             LdiTheme {
                 ShieldOverlay(
                     pkg = pkgState.value,
+                    nonce = nonce.value,
                     onClose = { finish() },
+                    onGoHome = { goHome() },
                     onBackToFocus = {
                         startActivity(
                             Intent(this, MainActivity::class.java)
@@ -64,11 +69,28 @@ class ShieldActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pkgState.value = intent.getStringExtra("pkg") ?: ""
+        // Every new attempt to open a blocked app gets a fresh message.
+        nonce.value = nonce.value + 1
+    }
+
+    private fun goHome() {
+        startActivity(
+            Intent(Intent.ACTION_MAIN)
+                .addCategory(Intent.CATEGORY_HOME)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        finish()
     }
 }
 
 @Composable
-fun ShieldOverlay(pkg: String, onClose: () -> Unit, onBackToFocus: () -> Unit) {
+fun ShieldOverlay(
+    pkg: String,
+    nonce: Int,
+    onClose: () -> Unit,
+    onGoHome: () -> Unit,
+    onBackToFocus: () -> Unit
+) {
     val ctx = LocalContext.current
     val active by Repo.active.collectAsState()
     val now by produceState(System.currentTimeMillis()) {
@@ -78,7 +100,15 @@ fun ShieldOverlay(pkg: String, onClose: () -> Unit, onBackToFocus: () -> Unit) {
         }
     }
     val label = remember(pkg) { if (pkg.isEmpty()) "That app" else appLabel(ctx, pkg) }
-    val quote = remember(pkg, active?.startedAt) { Quotes.random() }
+    val task = active?.purpose?.trim() ?: ""
+    val msg = remember(pkg, nonce) {
+        val a0 = Repo.active.value
+        val left = if (a0 != null) fmtClock(a0.remaining(System.currentTimeMillis())) else ""
+        ShieldMessages.pick(label, task, left)
+    }
+    val quote = remember(pkg, nonce) { Quotes.random() }
+
+    BackHandler(onBack = onGoHome)
 
     LaunchedEffect(active) {
         val a = active
@@ -99,21 +129,36 @@ fun ShieldOverlay(pkg: String, onClose: () -> Unit, onBackToFocus: () -> Unit) {
             Eyebrow("Focus shield", color = Muted)
             Spacer(Modifier.height(10.dp))
             Text(
-                "$label can wait.",
+                msg.title,
                 color = Cream,
                 style = MaterialTheme.typography.displaySmall
             )
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(16.dp))
             Text(
-                quote.text,
+                msg.body,
                 color = Cream,
                 style = MaterialTheme.typography.titleMedium
             )
-            if (quote.by.isNotEmpty()) {
-                Spacer(Modifier.height(4.dp))
-                Text("— " + quote.by, color = Muted, style = MaterialTheme.typography.labelMedium)
+            if (task.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Muted, RBox)
+                        .padding(14.dp)
+                ) {
+                    Eyebrow("You said you would work on", color = Muted)
+                    Spacer(Modifier.height(4.dp))
+                    Text(task, color = Cream, style = MaterialTheme.typography.titleMedium)
+                }
             }
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(18.dp))
+            Text(
+                quote.text + if (quote.by.isNotEmpty()) "  - " + quote.by else "",
+                color = Muted,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.height(24.dp))
             val a = active
             if (a != null) {
                 Text(
@@ -124,7 +169,7 @@ fun ShieldOverlay(pkg: String, onClose: () -> Unit, onBackToFocus: () -> Unit) {
                 )
                 Text("left in this session", color = Muted, style = MaterialTheme.typography.labelMedium)
             }
-            Spacer(Modifier.height(30.dp))
+            Spacer(Modifier.height(28.dp))
             PButton("Back to focus", Modifier.fillMaxWidth(), ink = Cream, paper = Ink, onClick = onBackToFocus)
             Spacer(Modifier.height(10.dp))
             PButton("Pause focus and leave", Modifier.fillMaxWidth(), filled = false, ink = Cream, paper = Ink) {
