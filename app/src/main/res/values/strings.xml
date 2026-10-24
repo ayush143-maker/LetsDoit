@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Let\'s Do It</string>
+    <string name="shield_service_label">Let\'s Do It focus shield</string>
+    <string name="accessibility_description">Used only while a focus session is running. When you open an app from your distraction list, Let\'s Do It sends you back to your home screen. It does not read screen content, passwords or messages, and nothing leaves your device.</string>
+</resources>

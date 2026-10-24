@@ -1,0 +1,53 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      # Fonts are fetched at build time (open-source, SIL OFL). If a download
+      # fails the app falls back to the system sans-serif font.
+      - name: Download fonts (IBM Plex Sans + Mono)
+        run: |
+          mkdir -p app/src/main/assets/fonts
+          base="https://raw.githubusercontent.com/google/fonts/main/ofl"
+          for f in ibmplexsans/IBMPlexSans-Regular.ttf ibmplexsans/IBMPlexSans-Medium.ttf \
+                   ibmplexsans/IBMPlexSans-SemiBold.ttf ibmplexsans/IBMPlexSans-Bold.ttf \
+                   ibmplexmono/IBMPlexMono-Regular.ttf ibmplexmono/IBMPlexMono-Medium.ttf; do
+            curl -fsSL "$base/$f" -o "app/src/main/assets/fonts/$(basename "$f")" \
+              || echo "::warning::Could not download $f, fallback font will be used"
+          done
+          ls -la app/src/main/assets/fonts
+
+      - name: Build release APK
+        run: gradle assembleRelease --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/release/app-release.apk LetsDoIt-release.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LetsDoIt-apk
+          path: LetsDoIt-release.apk
+          if-no-files-found: error
