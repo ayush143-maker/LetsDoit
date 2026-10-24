@@ -107,8 +107,8 @@ fun InsightsScreen(now: Long) {
                             Modifier
                                 .fillMaxWidth()
                                 .height(h.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (d == today) Ink else Ink.copy(alpha = 0.28f))
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(if (d == today) Accent else Accent.copy(alpha = 0.28f))
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -140,13 +140,13 @@ fun InsightsScreen(now: Long) {
                             val cell = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(5.dp))
                                 .background(
                                     if (m == 0L) Line.copy(alpha = 0.6f)
-                                    else Ink.copy(alpha = 0.2f + 0.8f * f)
+                                    else Accent.copy(alpha = 0.2f + 0.8f * f)
                                 )
                             Box(
-                                if (d == today) cell.border(1.5.dp, Ink, RoundedCornerShape(8.dp))
+                                if (d == today) cell.border(1.5.dp, Ink, RoundedCornerShape(5.dp))
                                 else cell
                             )
                         }

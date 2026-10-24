@@ -240,7 +240,7 @@ fun FocusScreen(
                         style = Stroke(width = stroke, cap = StrokeCap.Round)
                     )
                     drawArc(
-                        color = Ink,
+                        color = Accent,
                         startAngle = -90f,
                         sweepAngle = 360f * progress,
                         useCenter = false,
@@ -310,14 +310,14 @@ fun FocusScreen(
                 Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Line)
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(frac)
                         .fillMaxHeight()
-                        .background(Ink)
+                        .background(Accent)
                 )
             }
             Spacer(Modifier.height(14.dp))
@@ -358,7 +358,7 @@ fun FocusScreen(
     if (confirmEnd) {
         AlertDialog(
             onDismissRequest = { confirmEnd = false },
-            containerColor = Cream,
+            containerColor = Sand,
             title = { Text("End this session?") },
             text = {
                 Text("Your focused time is saved as an interrupted session. The focus shield will turn off.")

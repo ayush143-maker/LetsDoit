@@ -1,6 +1,7 @@
 package app.letsdoit.focus
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -71,7 +72,7 @@ fun TasksScreen(onFocusTask: (String) -> Unit) {
                         onClick = { add() },
                         modifier = Modifier
                             .size(54.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(10.dp))
                             .background(Ink)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add task", tint = Cream)
@@ -106,8 +107,9 @@ fun TaskRow(t: Task, onFocus: (String) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(Sand)
+            .border(1.dp, Line, RoundedCornerShape(10.dp))
             .padding(start = 16.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
