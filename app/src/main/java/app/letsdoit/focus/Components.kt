@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -40,7 +39,7 @@ fun Eyebrow(text: String, modifier: Modifier = Modifier, color: Color = Muted) {
         modifier = modifier,
         color = color,
         style = MaterialTheme.typography.labelSmall,
-        letterSpacing = 1.4.sp
+        letterSpacing = 1.2.sp
     )
 }
 
@@ -49,7 +48,7 @@ fun LogoMark(size: Dp) {
     Box(
         Modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
+            .clip(RoundedCornerShape(size * 0.24f))
             .background(Color(0xFF080808))
     ) {
         Image(
@@ -65,9 +64,10 @@ fun LCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
     Column(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RCard)
             .background(Sand)
-            .padding(20.dp),
+            .border(1.dp, Line, RCard)
+            .padding(18.dp),
         content = content
     )
 }
@@ -76,14 +76,15 @@ fun LCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
 fun Pill(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .clip(RoundedCornerShape(50))
+            .clip(RSmall)
             .background(if (selected) Ink else Sand)
+            .border(1.dp, if (selected) Ink else Line, RSmall)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Text(
             text,
-            color = if (selected) Cream else Ink,
+            color = if (selected) Sand else Ink,
             style = MaterialTheme.typography.labelLarge
         )
     }
@@ -99,15 +100,14 @@ fun PButton(
     paper: Color = Cream,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(16.dp)
     val base = modifier
-        .clip(shape)
+        .clip(RBox)
         .background(if (filled) ink else Color.Transparent)
-    val bordered = if (filled) base else base.border(1.dp, ink, shape)
+    val bordered = if (filled) base else base.border(1.dp, ink, RBox)
     Box(
         bordered
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 15.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -131,7 +131,7 @@ fun Field(
         onValueChange = onChange,
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = Ink),
-        cursorBrush = SolidColor(Ink),
+        cursorBrush = SolidColor(Accent),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { onDone() }),
         modifier = modifier.fillMaxWidth(),
@@ -139,9 +139,10 @@ fun Field(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RBox)
                     .background(Sand)
-                    .padding(horizontal = 18.dp, vertical = 16.dp)
+                    .border(1.dp, Line, RBox)
+                    .padding(horizontal = 16.dp, vertical = 15.dp)
             ) {
                 if (value.isEmpty()) {
                     Text(hint, color = Muted, style = MaterialTheme.typography.bodyLarge)
@@ -157,9 +158,9 @@ fun RoundBtn(sym: String, onClick: () -> Unit) {
     Box(
         Modifier
             .size(40.dp)
-            .clip(CircleShape)
-            .background(Cream)
-            .border(1.dp, Line, CircleShape)
+            .clip(RSmall)
+            .background(Sand)
+            .border(1.dp, Line, RSmall)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -169,12 +170,13 @@ fun RoundBtn(sym: String, onClick: () -> Unit) {
 
 @Composable
 fun CheckCircle(checked: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(7.dp)
     Box(
         Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .background(if (checked) Ink else Color.Transparent)
-            .border(1.5.dp, Ink, CircleShape)
+            .size(26.dp)
+            .clip(shape)
+            .background(if (checked) Accent else Color.Transparent)
+            .border(1.5.dp, if (checked) Accent else Muted, shape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
@@ -182,7 +184,7 @@ fun CheckCircle(checked: Boolean, onClick: () -> Unit) {
             Icon(
                 Icons.Default.Check,
                 contentDescription = "Done",
-                tint = Cream,
+                tint = Sand,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -193,8 +195,9 @@ fun CheckCircle(checked: Boolean, onClick: () -> Unit) {
 fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RBox)
             .background(Sand)
+            .border(1.dp, Line, RBox)
             .padding(16.dp)
     ) {
         Text(value, style = MaterialTheme.typography.headlineMedium)

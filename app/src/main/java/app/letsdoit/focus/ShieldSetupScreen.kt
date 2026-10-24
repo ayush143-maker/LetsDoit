@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -104,7 +105,7 @@ fun ShieldSetupScreen(now: Long) {
                     Eyebrow("Accessibility access", Modifier.weight(1f))
                     Box(
                         Modifier
-                            .clip(RoundedCornerShape(50))
+                            .clip(RoundedCornerShape(4.dp))
                             .background(if (accOn) Ink else Line)
                             .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
@@ -225,8 +226,9 @@ fun ShieldSetupScreen(now: Long) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(if (checked) Sand else Cream)
+                    .border(1.dp, if (checked) Accent else Line, RoundedCornerShape(10.dp))
                     .clickable {
                         Repo.updatePrefs {
                             it.copy(blocked = if (checked) it.blocked - app.pkg else it.blocked + app.pkg)
@@ -260,12 +262,12 @@ fun ShieldSetupScreen(now: Long) {
             Column {
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "Cream canvas. Obsidian actions. No account, ads, tracking or network access. Your tasks and focus history stay on this device.",
+                    "Clean canvas. Sharp actions. No account, ads, tracking or network access. Your tasks and focus history stay on this device.",
                     style = MaterialTheme.typography.labelMedium,
                     color = Muted
                 )
                 Spacer(Modifier.height(6.dp))
-                Text("Let's Do It · 1.1.0", style = MaterialTheme.typography.labelMedium, color = Muted)
+                Text("Let's Do It · 1.2.0", style = MaterialTheme.typography.labelMedium, color = Muted)
                 Spacer(Modifier.height(30.dp))
             }
         }
@@ -278,11 +280,11 @@ fun LdiSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
         checked = checked,
         onCheckedChange = onChange,
         colors = SwitchDefaults.colors(
-            checkedThumbColor = Cream,
-            checkedTrackColor = Ink,
-            checkedBorderColor = Ink,
+            checkedThumbColor = Sand,
+            checkedTrackColor = Accent,
+            checkedBorderColor = Accent,
             uncheckedThumbColor = Muted,
-            uncheckedTrackColor = Sand,
+            uncheckedTrackColor = Line,
             uncheckedBorderColor = Line
         )
     )

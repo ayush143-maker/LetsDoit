@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -93,33 +95,45 @@ fun MainApp() {
 @Composable
 fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
     val labels = listOf("Focus", "Tasks", "Insights", "Shield")
-    Column(Modifier.background(Cream)) {
+    val icons = listOf(NavIcons.Focus, NavIcons.Tasks, NavIcons.Insights, NavIcons.Shield)
+    Column(Modifier.background(Sand)) {
         HorizontalDivider(color = Line)
         Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 6.dp)
         ) {
             labels.forEachIndexed { i, label ->
+                val selected = tab == i
                 Column(
                     Modifier
                         .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
                         .clickable { onTab(i) }
-                        .padding(top = 12.dp, bottom = 10.dp),
+                        .padding(vertical = 6.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        label,
-                        style = if (tab == i) MaterialTheme.typography.titleSmall
-                        else MaterialTheme.typography.labelLarge,
-                        color = if (tab == i) Ink else Muted
-                    )
-                    Spacer(Modifier.height(5.dp))
                     Box(
                         Modifier
-                            .size(5.dp)
-                            .clip(CircleShape)
-                            .background(if (tab == i) Ink else Color.Transparent)
+                            .width(56.dp)
+                            .height(30.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (selected) AccentSoft else Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icons[i],
+                            contentDescription = label,
+                            tint = if (selected) Accent else Muted,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selected) Ink else Muted
                     )
                 }
             }

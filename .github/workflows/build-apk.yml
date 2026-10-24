@@ -25,19 +25,23 @@ jobs:
         with:
           gradle-version: 8.9
 
-      # Fonts are fetched at build time (open-source, SIL OFL). If a download
-      # fails the app falls back to the system sans-serif font.
+      # Fonts are fetched at build time (IBM Plex, SIL OFL). The build now FAILS if a
+      # download breaks, so the app can never silently ship with the system font again.
       - name: Download fonts (IBM Plex Sans + Mono)
         run: |
           mkdir -p app/src/main/assets/fonts
-          base="https://raw.githubusercontent.com/google/fonts/main/ofl"
-          for f in ibmplexsans/IBMPlexSans-Regular.ttf ibmplexsans/IBMPlexSans-Medium.ttf \
-                   ibmplexsans/IBMPlexSans-SemiBold.ttf ibmplexsans/IBMPlexSans-Bold.ttf \
-                   ibmplexmono/IBMPlexMono-Regular.ttf ibmplexmono/IBMPlexMono-Medium.ttf; do
-            curl -fsSL "$base/$f" -o "app/src/main/assets/fonts/$(basename "$f")" \
-              || echo "::warning::Could not download $f, fallback font will be used"
+          sans="https://raw.githubusercontent.com/IBM/plex/master/packages/plex-sans/fonts/complete/ttf"
+          mono="https://raw.githubusercontent.com/IBM/plex/master/packages/plex-mono/fonts/complete/ttf"
+          for w in Regular Medium SemiBold Bold; do
+            curl -fsSL --retry 3 "$sans/IBMPlexSans-$w.ttf" -o "app/src/main/assets/fonts/IBMPlexSans-$w.ttf"
+          done
+          for w in Regular Medium; do
+            curl -fsSL --retry 3 "$mono/IBMPlexMono-$w.ttf" -o "app/src/main/assets/fonts/IBMPlexMono-$w.ttf"
           done
           ls -la app/src/main/assets/fonts
+          for f in app/src/main/assets/fonts/*.ttf; do
+            test "$(wc -c < "$f")" -gt 20000 || { echo "::error::$f looks broken"; exit 1; }
+          done
 
       - name: Build release APK
         run: gradle assembleRelease --stacktrace
