@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -109,17 +110,14 @@ fun FocusScreen(
             .padding(horizontal = 22.dp)
     ) {
         Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LogoMark(40.dp)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Let's Do It", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    today.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Muted
-                )
-            }
+        Column(Modifier.fillMaxWidth()) {
+            Text("Let's Do It!", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                today.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = Muted
+            )
         }
         Spacer(Modifier.height(30.dp))
 
