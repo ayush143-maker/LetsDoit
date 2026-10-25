@@ -32,7 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -41,8 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 
-val RingLight = Color(0xFF8AA4FF)
-
+// Full-screen focus view (bottom bar hidden). Light theme to match the rest of the app.
 @Composable
 fun DeepFocusScreen(a: Active, now: Long) {
     val ctx = LocalContext.current
@@ -56,7 +54,6 @@ fun DeepFocusScreen(a: Active, now: Long) {
     val progress = (1f - rem.toFloat() / total.toFloat()).coerceIn(0f, 1f)
     val accOn = remember(now / 2000L) { accessibilityOn(ctx) }
     val blockedToday = blocks.count { Stats.day(it.ts) == LocalDate.now() }
-    val soft = Sand.copy(alpha = 0.6f)
 
     val pulse = rememberInfiniteTransition(label = "pulse")
     val breathe by pulse.animateFloat(
@@ -73,17 +70,16 @@ fun DeepFocusScreen(a: Active, now: Long) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(Ink)
+            .background(Cream)
             .systemBarsPadding()
             .padding(horizontal = 26.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(22.dp))
-        Eyebrow(if (a.running) "Deep focus" else "Paused", color = soft)
+        Eyebrow(if (a.running) "Deep focus" else "Paused")
         Spacer(Modifier.height(8.dp))
         Text(
             if (a.purpose.isNotBlank()) a.purpose else "Focus session",
-            color = Sand,
             style = MaterialTheme.typography.headlineLarge,
             textAlign = TextAlign.Center
         )
@@ -92,7 +88,7 @@ fun DeepFocusScreen(a: Active, now: Long) {
             Spacer(Modifier.height(4.dp))
             Text(
                 "Task · " + linked.title,
-                color = soft,
+                color = Muted,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )
@@ -103,9 +99,9 @@ fun DeepFocusScreen(a: Active, now: Long) {
                 val stroke = 10.dp.toPx()
                 val inset = stroke / 2f
                 val arcSize = Size(size.width - stroke, size.height - stroke)
-                drawCircle(color = Accent.copy(alpha = 0.10f), radius = size.minDimension / 2f * halo)
+                drawCircle(color = Accent.copy(alpha = 0.07f), radius = size.minDimension / 2f * halo)
                 drawArc(
-                    color = Sand.copy(alpha = 0.14f),
+                    color = Line,
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
@@ -114,7 +110,7 @@ fun DeepFocusScreen(a: Active, now: Long) {
                     style = Stroke(width = stroke, cap = StrokeCap.Round)
                 )
                 drawArc(
-                    color = RingLight,
+                    color = Accent,
                     startAngle = -90f,
                     sweepAngle = 360f * progress,
                     useCenter = false,
@@ -126,14 +122,13 @@ fun DeepFocusScreen(a: Active, now: Long) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     fmtClock(rem),
-                    color = Sand,
                     fontFamily = LocalMono.current,
                     fontSize = 60.sp,
                     letterSpacing = (-1).sp
                 )
                 Text(
                     "of ${a.plannedMin} min",
-                    color = soft,
+                    color = Muted,
                     style = MaterialTheme.typography.labelMedium
                 )
             }
@@ -141,13 +136,12 @@ fun DeepFocusScreen(a: Active, now: Long) {
         Spacer(Modifier.weight(1f))
         Text(
             quote.text,
-            color = Sand,
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )
         if (quote.by.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            Text("— " + quote.by, color = soft, style = MaterialTheme.typography.labelMedium)
+            Text("— " + quote.by, color = Muted, style = MaterialTheme.typography.labelMedium)
         }
         Spacer(Modifier.height(22.dp))
         val line = when {
@@ -156,16 +150,13 @@ fun DeepFocusScreen(a: Active, now: Long) {
             prefs.shieldOn && !accOn -> "Shield needs accessibility access"
             else -> "Timer only · shield off"
         }
-        Text(line, color = soft, style = MaterialTheme.typography.labelMedium)
+        Text(line, color = Muted, style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PButton(
-                if (a.running) "Pause" else "Resume",
-                Modifier.weight(1f),
-                ink = Sand,
-                paper = Ink
-            ) { if (a.running) Focus.pause() else Focus.resume() }
-            PButton("End", Modifier.weight(1f), filled = false, ink = Sand, paper = Ink) {
+            PButton(if (a.running) "Pause" else "Resume", Modifier.weight(1f)) {
+                if (a.running) Focus.pause() else Focus.resume()
+            }
+            PButton("End", Modifier.weight(1f), filled = false) {
                 confirmEnd = true
             }
         }

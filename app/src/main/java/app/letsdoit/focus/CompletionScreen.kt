@@ -48,7 +48,6 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
     val ring = remember { Animatable(0f) }
     val tick = remember { Animatable(0f) }
     val fade = remember { Animatable(0f) }
-    val soft = Sand.copy(alpha = 0.6f)
 
     LaunchedEffect(s.id) {
         ring.animateTo(1f, tween(1000, easing = FastOutSlowInEasing))
@@ -65,7 +64,7 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(Ink)
+            .background(Cream)
             .systemBarsPadding()
             .padding(26.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -77,11 +76,11 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
             val inset = stroke / 2f
             val arcSize = Size(w - stroke, w - stroke)
             drawCircle(
-                color = Accent.copy(alpha = 0.14f * ring.value),
+                color = Accent.copy(alpha = 0.10f * ring.value),
                 radius = w / 2f * (0.85f + 0.15f * ring.value)
             )
             drawArc(
-                color = Sand.copy(alpha = 0.14f),
+                color = Line,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -90,7 +89,7 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
                 style = Stroke(width = stroke, cap = StrokeCap.Round)
             )
             drawArc(
-                color = RingLight,
+                color = Accent,
                 startAngle = -90f,
                 sweepAngle = 360f * ring.value,
                 useCenter = false,
@@ -107,7 +106,7 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
             val lw = 10.dp.toPx()
             if (t1 > 0f) {
                 drawLine(
-                    color = Sand,
+                    color = Ink,
                     start = p1,
                     end = Offset(p1.x + (p2.x - p1.x) * t1, p1.y + (p2.y - p1.y) * t1),
                     strokeWidth = lw,
@@ -116,7 +115,7 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
             }
             if (t2 > 0f) {
                 drawLine(
-                    color = Sand,
+                    color = Ink,
                     start = p2,
                     end = Offset(p2.x + (p3.x - p2.x) * t2, p2.y + (p3.y - p2.y) * t2),
                     strokeWidth = lw,
@@ -126,11 +125,10 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
         }
         Spacer(Modifier.height(30.dp))
         Column(Modifier.alpha(fade.value), horizontalAlignment = Alignment.CenterHorizontally) {
-            Eyebrow("Session complete", color = soft)
+            Eyebrow("Session complete")
             Spacer(Modifier.height(8.dp))
             Text(
                 fmtMs(s.focusedMs) + " of focus",
-                color = Sand,
                 style = MaterialTheme.typography.displaySmall,
                 textAlign = TextAlign.Center
             )
@@ -138,7 +136,7 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     s.purpose,
-                    color = soft,
+                    color = Muted,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )
@@ -146,44 +144,42 @@ fun CompletionScreen(s: Session, onDone: () -> Unit) {
             Spacer(Modifier.height(20.dp))
             Text(
                 quote.text,
-                color = Sand,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center
             )
             if (quote.by.isNotEmpty()) {
                 Spacer(Modifier.height(4.dp))
-                Text("— " + quote.by, color = soft, style = MaterialTheme.typography.labelMedium)
+                Text("— " + quote.by, color = Muted, style = MaterialTheme.typography.labelMedium)
             }
             Spacer(Modifier.height(22.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                DarkStat("Today", "$todayMin / ${prefs.goalMin} min", Modifier.weight(1f))
-                DarkStat("Streak", if (streak == 1) "1 day" else "$streak days", Modifier.weight(1f))
+                StatChip("Today", "$todayMin / ${prefs.goalMin} min", Modifier.weight(1f))
+                StatChip("Streak", if (streak == 1) "1 day" else "$streak days", Modifier.weight(1f))
             }
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.alpha(fade.value)) {
             PButton(
                 "Start another ${s.plannedMin} min",
-                Modifier.fillMaxWidth(),
-                ink = Sand,
-                paper = Ink
+                Modifier.fillMaxWidth()
             ) { Focus.start(ctx, s.plannedMin, s.purpose, s.taskId) }
             Spacer(Modifier.height(10.dp))
-            PButton("Done", Modifier.fillMaxWidth(), filled = false, ink = Sand, paper = Ink) { onDone() }
+            PButton("Done", Modifier.fillMaxWidth(), filled = false) { onDone() }
         }
         Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
-private fun DarkStat(label: String, value: String, modifier: Modifier = Modifier) {
+private fun StatChip(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier
             .clip(RBox)
-            .border(1.dp, Sand.copy(alpha = 0.18f), RBox)
+            .background(Sand)
+            .border(1.dp, Line, RBox)
             .padding(14.dp)
     ) {
-        Text(value, color = Sand, style = MaterialTheme.typography.titleMedium)
-        Text(label, color = Sand.copy(alpha = 0.6f), style = MaterialTheme.typography.labelMedium)
+        Text(value, style = MaterialTheme.typography.titleMedium)
+        Text(label, color = Muted, style = MaterialTheme.typography.labelMedium)
     }
 }
