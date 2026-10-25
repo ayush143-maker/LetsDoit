@@ -175,11 +175,20 @@ class DistractionService : AccessibilityService() {
         if (now - lastBlockAt < 800L) return
         lastBlockAt = now
         Repo.addBlock(pkg)
-        performGlobalAction(GLOBAL_ACTION_HOME)
+        // Show the shield right on top of the blocked app. Pressing HOME first made the
+        // launcher race the shield screen and win, so the app was just cut with no message.
         val i = Intent(this, ShieldActivity::class.java)
             .putExtra("pkg", pkg)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        startActivity(i)
+            .addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            )
+        try {
+            startActivity(i)
+        } catch (e: Exception) {
+            performGlobalAction(GLOBAL_ACTION_HOME)
+        }
     }
 
     override fun onInterrupt() {}

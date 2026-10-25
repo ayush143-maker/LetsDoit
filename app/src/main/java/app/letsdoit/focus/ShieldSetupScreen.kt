@@ -267,7 +267,7 @@ fun ShieldSetupScreen(now: Long) {
                     color = Muted
                 )
                 Spacer(Modifier.height(6.dp))
-                Text("Let's Do It · 1.2.0", style = MaterialTheme.typography.labelMedium, color = Muted)
+                Text("Let's Do It · 1.2.1", style = MaterialTheme.typography.labelMedium, color = Muted)
                 Spacer(Modifier.height(30.dp))
             }
         }
