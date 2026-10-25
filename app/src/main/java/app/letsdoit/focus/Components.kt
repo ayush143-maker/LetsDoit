@@ -24,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
@@ -43,18 +45,21 @@ fun Eyebrow(text: String, modifier: Modifier = Modifier, color: Color = Muted) {
     )
 }
 
+// Uses the app's real launcher logo (adaptive foreground vector on its icon background).
 @Composable
 fun LogoMark(size: Dp) {
     Box(
         Modifier
             .size(size)
             .clip(RoundedCornerShape(size * 0.24f))
-            .background(Color(0xFF080808))
+            .background(colorResource(R.color.ic_bg))
     ) {
         Image(
-            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            painter = painterResource(R.drawable.ic_launcher_fg),
             contentDescription = "Let's Do It",
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(1.6f)
         )
     }
 }
