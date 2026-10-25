@@ -60,11 +60,7 @@ fun InsightsScreen(now: Long) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 22.dp)
     ) {
-        Spacer(Modifier.height(18.dp))
-        Eyebrow("Insights")
-        Spacer(Modifier.height(6.dp))
-        Text("Time well spent.", style = MaterialTheme.typography.displaySmall)
-        Spacer(Modifier.height(20.dp))
+        PageHeader("Insights", "See where your time really goes.")
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile("Day streak", "$streak", Modifier.weight(1f))
@@ -107,8 +103,8 @@ fun InsightsScreen(now: Long) {
                             Modifier
                                 .fillMaxWidth()
                                 .height(h.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(if (d == today) Accent else Accent.copy(alpha = 0.28f))
+                                .clip(RSmall)
+                                .background(if (d == today) Accent else Accent.copy(alpha = 0.3f))
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -137,16 +133,17 @@ fun InsightsScreen(now: Long) {
                         rowDays.forEach { d ->
                             val m = byDay[d] ?: 0L
                             val f = (m.toFloat() / prefs.goalMin.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
+                            val shape = RoundedCornerShape(6.dp)
                             val cell = Modifier
                                 .weight(1f)
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(5.dp))
+                                .clip(shape)
                                 .background(
-                                    if (m == 0L) Line.copy(alpha = 0.6f)
-                                    else Accent.copy(alpha = 0.2f + 0.8f * f)
+                                    if (m == 0L) Line
+                                    else Accent.copy(alpha = 0.25f + 0.75f * f)
                                 )
                             Box(
-                                if (d == today) cell.border(1.5.dp, Ink, RoundedCornerShape(5.dp))
+                                if (d == today) cell.border(1.5.dp, Ink, shape)
                                 else cell
                             )
                         }
