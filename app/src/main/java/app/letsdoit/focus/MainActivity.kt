@@ -96,12 +96,13 @@ fun MainApp() {
         ) {
             Box(Modifier.weight(1f)) {
                 when (tab) {
-                    0 -> FocusScreen(now, preset, { preset = null }, { tab = 3 })
+                    0 -> FocusScreen(now, preset, { preset = null }, { tab = 4 })
                     1 -> TasksScreen { id ->
                         preset = id
                         tab = 0
                     }
                     2 -> InsightsScreen(now)
+                    3 -> ScreenHabitsScreen(now)
                     else -> ShieldTab(now)
                 }
             }
@@ -112,15 +113,15 @@ fun MainApp() {
 
 @Composable
 fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
-    val labels = listOf("Focus", "Tasks", "Insights", "Shield")
-    val icons = listOf(NavIcons.Focus, NavIcons.Tasks, NavIcons.Insights, NavIcons.Shield)
+    val labels = listOf("Focus", "Tasks", "Insights", "Habits", "Shield")
+    val icons = listOf(NavIcons.Focus, NavIcons.Tasks, NavIcons.Insights, NavIcons.Habits, NavIcons.Shield)
     Column(Modifier.background(Sand)) {
         HorizontalDivider(color = Line)
         Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = 6.dp, vertical = 6.dp)
         ) {
             labels.forEachIndexed { i, label ->
                 val selected = tab == i
@@ -134,8 +135,8 @@ fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
                 ) {
                     Box(
                         Modifier
-                            .width(56.dp)
-                            .height(30.dp)
+                            .width(44.dp)
+                            .height(28.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (selected) AccentSoft else Color.Transparent),
                         contentAlignment = Alignment.Center
@@ -144,14 +145,15 @@ fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
                             imageVector = icons[i],
                             contentDescription = label,
                             tint = if (selected) Accent else Muted,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                     Spacer(Modifier.height(3.dp))
                     Text(
                         label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (selected) Ink else Muted
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selected) Ink else Muted,
+                        maxLines = 1
                     )
                 }
             }
