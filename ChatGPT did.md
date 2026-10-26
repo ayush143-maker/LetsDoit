@@ -24,3 +24,15 @@ Screen time depends on Android usage history and Usage Access being enabled. Est
 
 Implementation credit: ChatGPT  
 Co-author credit: OpenAI
+
+
+## Monthly analysis and roast update (Claude)
+
+- Added a month-by-month calendar with per-date foreground-time totals and a selected-day app contribution breakdown.
+- Added an evidence-based, humorous English Straight Talk roast, with a daily-average comparison and no fabricated usage when records are missing.
+- Added on-device daily usage history persistence and a five-minute in-memory report cache to avoid recomputation on every tab revisit.
+- Added editable display labels for apps, with YouTube shown as Instagram by default for the requested joke; app tracking remains keyed to the real package.
+- Saved rename changes now update the visible report immediately instead of clearing it and waiting for another refresh.
+- Bumped version to 1.4.2 (version code 8).
+
+Latest follow-up implementation credit: Claude  <br>Co-author: Claude <noreply@anthropic.com>

@@ -37,3 +37,12 @@ IBM Plex Sans + Mono (SIL OFL) are downloaded by the workflow into `app/src/main
   - `FocusScreen.kt`, `TasksScreen.kt`, `InsightsScreen.kt`, `ScreenHabits.kt`, `ShieldSetupScreen.kt`, `ShieldActivity.kt`
 - `.github/workflows/build-apk.yml` – CI build
 - `store-icon-512.png` – 512px icon for store listings
+
+
+## Screen Habits monthly analysis
+
+- The Habits tab includes a month-by-month calendar. Tap a date to inspect total recorded screen time and the apps that contributed most to that day.
+- Straight Talk generates a playful English roast from the selected day total and its recorded-day average. It does not invent numbers when data is unavailable.
+- App labels are editable for display only. For fun, YouTube appears as Instagram by default; underlying package tracking remains unchanged.
+- Month reports are cached in memory for five minutes to avoid recomputing when switching tabs. Daily package-duration history is saved locally for up to 366 days when the tracker is opened and data is available. Older history is not retroactively guaranteed.
+- This update is version 1.4.2 (version code 8).

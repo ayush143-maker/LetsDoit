@@ -285,7 +285,10 @@ private fun roastFor(dayMs: Long, topApp: String?, averageMs: Long): String {
     }
     val top = topApp ?: "your favourite app"
     val time = durationLabel(dayMs)
-    return when {
+    val aboveAverage = if (averageMs > 0L && dayMs > averageMs * 5L / 4L) {
+        "That is ${durationLabel(dayMs - averageMs)} above your average recorded day. "
+    } else ""
+    return aboveAverage + when {
         dayMs >= 8L * 60L * 60L * 1000L ->
             "SALE, $time on the phone? Keep this up and your brain will become an alu with Wi-Fi. $top has practically hired you full-time—with zero salary. Put it down and do one 25-minute focus block."
         dayMs >= 6L * 60L * 60L * 1000L ->
@@ -296,7 +299,7 @@ private fun roastFor(dayMs: Long, topApp: String?, averageMs: Long): String {
             "$time so far. Not a disaster, but don't let one quick check become an unpaid internship at $top. Pick one task and finish a focused 25 minutes."
         else ->
             "Phone time is $time. Nice—now don't donate the rest of your day to the scroll. Get one meaningful thing done before opening $top again."
-    }.replace("\$time", time).replace("\$top", top)
+    }
 }
 
 @Composable
@@ -396,7 +399,7 @@ fun ScreenHabitsScreen(now: Long) {
                     Eyebrow("Straight talk · receipts only")
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        roastFor(if (currentMonth) todayTotal else selectedMs, if (currentMonth) todayTop else selectedApps.firstOrNull()?.first?.label, data.averageRecordedDayMs),
+                        roastFor(selectedMs, selectedApps.firstOrNull()?.first?.label, data.averageRecordedDayMs),
                         style = MaterialTheme.typography.bodyLarge, color = Ink
                     )
                     Spacer(Modifier.height(8.dp))
@@ -527,12 +530,19 @@ fun ScreenHabitsScreen(now: Long) {
                         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                             TextButton(onClick = { renamePackage = null }) { Text("Cancel") }
                             TextButton(onClick = {
-                                val value = renameText.trim()
-                                ctx.getSharedPreferences(LABEL_PREFS, Context.MODE_PRIVATE).edit()
-                                    .putString(renamePackage, value.ifBlank { appLabel(ctx, renamePackage!!) }).apply()
-                                ScreenHabitsCache.reports.clear()
-                                ScreenHabitsCache.loadedAt.clear()
-                                report = null
+                                val pkg = renamePackage
+                                if (pkg != null) {
+                                    val original = loadApps(ctx).firstOrNull { it.pkg == pkg }?.label ?: appLabel(ctx, pkg)
+                                    val defaultLabel = if (original.equals("YouTube", ignoreCase = true)) "Instagram" else original
+                                    val value = renameText.trim().ifBlank { defaultLabel }
+                                    ctx.getSharedPreferences(LABEL_PREFS, Context.MODE_PRIVATE).edit().putString(pkg, value).apply()
+                                    val updatedReport = report?.copy(apps = report!!.apps.map { app -> if (app.packageName == pkg) app.copy(label = value) else app })
+                                    if (updatedReport != null) {
+                                        report = updatedReport
+                                        ScreenHabitsCache.reports[selectedMonth] = updatedReport
+                                        ScreenHabitsCache.loadedAt[selectedMonth] = now
+                                    }
+                                }
                                 renamePackage = null
                             }) { Text("Save") }
                         }
