@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,10 +29,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 private val KNOWN_DISTRACTIONS = setOf(
     "com.instagram.android", "com.instagram.barcelona", "com.google.android.youtube",
@@ -109,6 +115,28 @@ fun ShieldOverview(now: Long, onOpenApps: () -> Unit) {
     val accOn = remember(now / 1000L) { accessibilityOn(ctx) }
     val version = remember {
         runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull() ?: ""
+    }
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            val ok = runCatching {
+                val os = ctx.contentResolver.openOutputStream(uri) ?: throw IllegalStateException("no stream")
+                os.use { it.write(Backup.export().toByteArray(Charsets.UTF_8)) }
+            }.isSuccess
+            Toast.makeText(
+                ctx,
+                if (ok) "Backup saved" else "Could not save the backup",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) pendingImport = uri
     }
 
     Column(
@@ -202,16 +230,16 @@ fun ShieldOverview(now: Long, onOpenApps: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Default duration", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                RoundBtn("−") { Repo.updatePrefs { it.copy(defaultMin = (it.defaultMin - 5).coerceAtLeast(5)) } }
+                RoundBtn("\u2212") { Repo.updatePrefs { it.copy(defaultMin = (it.defaultMin - 5).coerceAtLeast(5)) } }
                 Text("${prefs.defaultMin} min", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleSmall)
                 RoundBtn("+") { Repo.updatePrefs { it.copy(defaultMin = (it.defaultMin + 5).coerceAtMost(180)) } }
             }
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Daily focus goal", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                RoundBtn("−") { Repo.updatePrefs { it.copy(goalMin = (it.goalMin - 15).coerceAtLeast(15)) } }
-                Text("${prefs.goalMin} min", Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleSmall)
-                RoundBtn("+") { Repo.updatePrefs { it.copy(goalMin = (it.goalMin + 15).coerceAtMost(720)) } }
+                RoundBtn("\u2212") { Repo.updatePrefs { it.copy(goalMin = (it.goalMin - 30).coerceAtLeast(60)) } }
+                Text(fmtMin(prefs.goalMin.toLong()), Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleSmall)
+                RoundBtn("+") { Repo.updatePrefs { it.copy(goalMin = (it.goalMin + 30).coerceAtMost(960)) } }
             }
             Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -225,6 +253,26 @@ fun ShieldOverview(now: Long, onOpenApps: () -> Unit) {
             }
         }
 
+        Spacer(Modifier.height(12.dp))
+        LCard {
+            Eyebrow("Backup")
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Export your tasks, sessions and settings to a file. After an update or a reinstall, import it to get everything back.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Muted
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PButton("Export", Modifier.weight(1f)) {
+                    exportLauncher.launch("letsdoit-backup-" + LocalDate.now() + ".json")
+                }
+                PButton("Import", Modifier.weight(1f), filled = false) {
+                    importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
+                }
+            }
+        }
+
         Spacer(Modifier.height(18.dp))
         Text(
             "No account, ads, tracking or network access. Your tasks and focus history stay on this device.",
@@ -234,6 +282,31 @@ fun ShieldOverview(now: Long, onOpenApps: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text("Let's Do It · $version", style = MaterialTheme.typography.labelMedium, color = Muted)
         Spacer(Modifier.height(30.dp))
+    }
+
+    val pi = pendingImport
+    if (pi != null) {
+        AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            containerColor = Sand,
+            title = { Text("Import this backup?") },
+            text = {
+                Text("It replaces the tasks, sessions and settings currently on this phone.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingImport = null
+                    val text = runCatching {
+                        ctx.contentResolver.openInputStream(pi)?.bufferedReader()?.use { it.readText() }
+                    }.getOrNull()
+                    val err = if (text == null) "Could not read this file." else Backup.restore(text)
+                    Toast.makeText(ctx, err ?: "Backup restored", Toast.LENGTH_LONG).show()
+                }) { Text("Replace data", color = Ink) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImport = null }) { Text("Cancel", color = Muted) }
+            }
+        )
     }
 }
 

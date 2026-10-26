@@ -32,7 +32,22 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
-// Monthly calendar: the more you focus on a day, the deeper the blue.
+// GitHub-style levels: 0 = no focus, 1..4 = deeper blue as you reach 25% / 50% / 100% of your daily goal.
+private fun level(m: Long, goal: Int): Int {
+    if (m <= 0L) return 0
+    val f = m.toFloat() / goal.coerceAtLeast(1).toFloat()
+    return if (f >= 1f) 4 else if (f >= 0.5f) 3 else if (f >= 0.25f) 2 else 1
+}
+
+private fun levelAlpha(lv: Int): Float {
+    return when (lv) {
+        1 -> 0.25f
+        2 -> 0.5f
+        3 -> 0.75f
+        else -> 1f
+    }
+}
+
 @Composable
 fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
     val today = LocalDate.now()
@@ -48,7 +63,13 @@ fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
     val total = mins.sum()
     val activeDays = mins.count { it > 0L }
     val goalDays = mins.count { it >= goal }
-    val bestMin = mins.maxOrNull() ?: 0L
+    val bestIdx = mins.indices.maxByOrNull { mins[it] } ?: 0
+    val bestMin = mins.getOrElse(bestIdx) { 0L }
+    val bestLabel = if (bestMin > 0L) {
+        fmtMin(bestMin) + " · " + days[bestIdx].format(DateTimeFormatter.ofPattern("MMM d"))
+    } else {
+        "—"
+    }
     val monthSessions = sessions.count { YearMonth.from(Stats.day(it.end)) == ym }
     val title = ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault()) + " " + ym.year
 
@@ -96,11 +117,11 @@ fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
                             val d = days[idx]
                             val m = mins[idx]
                             val future = d.isAfter(today)
-                            val f = (m.toFloat() / goal.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
-                            val bg = if (m > 0L) Accent.copy(alpha = 0.18f + 0.82f * f)
+                            val lv = level(m, goal)
+                            val bg = if (lv > 0) Accent.copy(alpha = levelAlpha(lv))
                             else if (future) Color.Transparent
                             else Line.copy(alpha = 0.55f)
-                            val fg = if (m > 0L && f > 0.45f) Sand
+                            val fg = if (lv >= 3) Sand
                             else if (future) Muted.copy(alpha = 0.5f)
                             else Ink
                             val shape = RoundedCornerShape(8.dp)
@@ -110,9 +131,9 @@ fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
                                 .clip(shape)
                                 .background(bg)
                             if (d.toEpochDay() == selected) {
-                                tile = tile.border(1.5.dp, Accent, shape)
-                            } else if (d == today) {
                                 tile = tile.border(1.5.dp, Ink, shape)
+                            } else if (d == today) {
+                                tile = tile.border(1.5.dp, Accent, shape)
                             }
                             Box(
                                 tile.clickable {
@@ -142,19 +163,26 @@ fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Less", style = MaterialTheme.typography.labelSmall, color = Muted)
             Spacer(Modifier.width(6.dp))
-            listOf(0.18f, 0.4f, 0.7f, 1f).forEach { a ->
+            Box(
+                Modifier
+                    .padding(horizontal = 2.dp)
+                    .size(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Line.copy(alpha = 0.55f))
+            )
+            listOf(1, 2, 3, 4).forEach { lv ->
                 Box(
                     Modifier
                         .padding(horizontal = 2.dp)
                         .size(14.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Accent.copy(alpha = a))
+                        .background(Accent.copy(alpha = levelAlpha(lv)))
                 )
             }
             Spacer(Modifier.width(6.dp))
             Text("More", style = MaterialTheme.typography.labelSmall, color = Muted)
             Spacer(Modifier.weight(1f))
-            Text("Goal $goal min/day", style = MaterialTheme.typography.labelSmall, color = Muted)
+            Text("Goal " + fmtMin(goal.toLong()), style = MaterialTheme.typography.labelSmall, color = Muted)
         }
 
         if (selected >= 0L) {
@@ -191,32 +219,33 @@ fun MonthCard(byDay: Map<LocalDate, Long>, sessions: List<Session>, goal: Int) {
         }
 
         Spacer(Modifier.height(16.dp))
-        Row {
-            MonthStat("Focused", fmtMin(total), Modifier.weight(1f))
-            MonthStat("Active days", "$activeDays / $len", Modifier.weight(1f))
-            MonthStat("Goal days", "$goalDays", Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(12.dp))
-        Row {
-            MonthStat("Sessions", "$monthSessions", Modifier.weight(1f))
-            MonthStat(
-                "Avg per active day",
-                if (activeDays > 0) fmtMin(total / activeDays) else "\u2014",
-                Modifier.weight(1f)
-            )
-            MonthStat(
-                "Best day",
-                if (bestMin > 0L) fmtMin(bestMin) else "\u2014",
-                Modifier.weight(1f)
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatRow("Focused this month", fmtMin(total))
+            StatRow("Active days", "$activeDays of $len")
+            StatRow("Goal days", "$goalDays")
+            StatRow("Sessions", "$monthSessions")
+            StatRow("Best day", bestLabel)
         }
     }
 }
 
 @Composable
-private fun MonthStat(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(modifier) {
+private fun StatRow(label: String, value: String) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RBox)
+            .background(Cream)
+            .border(1.dp, Line, RBox)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelLarge,
+            color = Muted
+        )
         Text(value, style = MaterialTheme.typography.titleMedium)
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Muted)
     }
 }
