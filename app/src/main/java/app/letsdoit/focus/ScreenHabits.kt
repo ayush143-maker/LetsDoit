@@ -82,33 +82,50 @@ private fun openUsageAccessSettings(ctx: Context) {
     }
 }
 
+/**
+ * Prefer Android's aggregated daily UsageStats for historical totals. Usage events are
+ * merged into today's app totals as a live-data fallback because aggregated stats can lag
+ * while an app is still open. All durations remain milliseconds internally.
+ */
 private fun readScreenHabitsReport(ctx: Context, now: Long): ScreenHabitsReport {
     val zone = ZoneId.systemDefault()
     val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-    val startDay = today.minusDays(6)
-    val startMs = startDay.atStartOfDay(zone).toInstant().toEpochMilli()
+    val dates = (6 downTo 0).map { today.minusDays(it.toLong()) }
     val manager = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
     val labels = loadApps(ctx).associate { it.pkg to it.label }
-    val appDailyMs = mutableMapOf<String, MutableMap<LocalDate, Long>>()
-    val events = manager.queryEvents(startMs, now)
+    val allDailyMs = mutableMapOf<String, MutableMap<LocalDate, Long>>()
+
+    dates.forEach { date ->
+        val dayStart = date.atStartOfDay(zone).toInstant().toEpochMilli()
+        val nextDay = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val dayEnd = minOf(nextDay, now)
+        if (dayEnd <= dayStart) return@forEach
+
+        val stats = manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, dayStart, dayEnd)
+        stats.orEmpty().forEach { stat ->
+            val duration = stat.totalTimeInForeground
+            if (duration > 0L) {
+                val byDay = allDailyMs.getOrPut(stat.packageName) { mutableMapOf() }
+                byDay[date] = maxOf(byDay[date] ?: 0L, duration)
+            }
+        }
+    }
+
+    // Reconstruct today's foreground intervals so a currently open app can appear before
+    // Android refreshes its daily aggregate. Historical totals continue to use UsageStats.
+    val todayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
+    val events = manager.queryEvents(todayStart, now)
     val event = UsageEvents.Event()
     var foregroundPackage: String? = null
     var foregroundSince = 0L
 
-    fun recordSpan(endTime: Long) {
+    fun recordForegroundSpan(endTime: Long) {
         val pkg = foregroundPackage ?: return
-        val finish = minOf(endTime, now)
-        var cursor = maxOf(startMs, foregroundSince)
-        if (labels.containsKey(pkg)) {
-            while (cursor < finish) {
-                val day = Instant.ofEpochMilli(cursor).atZone(zone).toLocalDate()
-                val nextDay = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-                val segmentEnd = minOf(finish, nextDay)
-                val duration = segmentEnd - cursor
-                val byDay = appDailyMs.getOrPut(pkg) { mutableMapOf() }
-                byDay[day] = (byDay[day] ?: 0L) + duration
-                cursor = segmentEnd
-            }
+        val end = minOf(endTime, now)
+        if (end > foregroundSince) {
+            val duration = end - foregroundSince
+            val byDay = allDailyMs.getOrPut(pkg) { mutableMapOf() }
+            byDay[today] = maxOf(byDay[today] ?: 0L, duration + (byDay[today] ?: 0L))
         }
         foregroundPackage = null
         foregroundSince = 0L
@@ -121,7 +138,7 @@ private fun readScreenHabitsReport(ctx: Context, now: Long): ScreenHabitsReport 
             UsageEvents.Event.ACTIVITY_RESUMED,
             UsageEvents.Event.MOVE_TO_FOREGROUND -> {
                 if (pkg != null && foregroundPackage != pkg) {
-                    recordSpan(event.timeStamp)
+                    recordForegroundSpan(event.timeStamp)
                     foregroundPackage = pkg
                     foregroundSince = event.timeStamp
                 }
@@ -129,34 +146,65 @@ private fun readScreenHabitsReport(ctx: Context, now: Long): ScreenHabitsReport 
             UsageEvents.Event.ACTIVITY_PAUSED,
             UsageEvents.Event.MOVE_TO_BACKGROUND -> {
                 if (pkg != null && foregroundPackage == pkg) {
-                    recordSpan(event.timeStamp)
+                    recordForegroundSpan(event.timeStamp)
                 }
             }
-            UsageEvents.Event.SCREEN_NON_INTERACTIVE -> recordSpan(event.timeStamp)
+            UsageEvents.Event.SCREEN_NON_INTERACTIVE -> recordForegroundSpan(event.timeStamp)
         }
     }
-    recordSpan(now)
+    recordForegroundSpan(now)
 
-    val dates = (6 downTo 0).map { today.minusDays(it.toLong()) }
     val days = dates.map { date ->
-        UsageDay(date, appDailyMs.values.sumOf { it[date] ?: 0L })
+        UsageDay(date, allDailyMs.values.sumOf { it[date] ?: 0L })
     }
-    val apps = appDailyMs.map { (pkg, usageByDay) ->
-        AppUsage(
+    val apps = allDailyMs.mapNotNull { (pkg, usageByDay) ->
+        val label = labels[pkg] ?: return@mapNotNull null
+        val week = usageByDay.values.sum()
+        if (week <= 0L) null else AppUsage(
             packageName = pkg,
-            label = labels[pkg] ?: pkg,
+            label = label,
             todayMs = usageByDay[today] ?: 0L,
-            weekMs = usageByDay.values.sum()
+            weekMs = week
         )
-    }.filter { it.weekMs > 0L }.sortedByDescending { it.weekMs }
+    }.sortedByDescending { it.weekMs }
 
     return ScreenHabitsReport(days, apps)
 }
 
+private fun usageDuration(ms: Long): String {
+    if (ms <= 0L) return "0 min"
+    val minutes = ms / 60_000L
+    if (minutes == 0L) return "<1 min"
+    return if (minutes >= 60L) "${minutes / 60L}h ${minutes % 60L}m" else "$minutes min"
+}
+
 private fun compactUsage(ms: Long): String {
     val minutes = ms / 60_000L
-    return if (minutes >= 60L) (minutes / 60L).toString() + "h"
-    else minutes.toString()
+    return if (minutes >= 60L) "${minutes / 60L}h"
+    else if (minutes > 0L) "$minutes min"
+    else "0"
+}
+
+private fun straightTalk(data: ScreenHabitsReport): String {
+    val todayMs = data.todayMs
+    val weekMs = data.weekMs
+    if (weekMs <= 0L) {
+        return "No reliable usage history has come back yet. Check Usage Access, then use your phone normally and check again. No fake numbers, no guesses."
+    }
+    if (todayMs <= 0L) {
+        return "Today's total has not updated yet, even though earlier usage exists. Do not trust this zero as a clean day. Android may be lagging; check again shortly."
+    }
+
+    val topToday = data.apps.filter { it.todayMs > 0L }.maxByOrNull { it.todayMs }
+    val appName = topToday?.label ?: data.apps.firstOrNull()?.label
+    val hours = todayMs / 3_600_000L
+    return when {
+        hours >= 6L -> "Tough love: ${usageDuration(todayMs)} on your phone today is a serious amount of attention handed away. ${appName?.let { "Put $it on a limit, " } ?: ""}then finish one 25-minute focus session before opening distractions again."
+        todayMs >= 3L * 60L * 60L * 1000L ->
+            "Real talk: you have already given your phone ${usageDuration(todayMs)} today. That is more than a quick check. ${appName?.let { "Set a boundary for $it and " } ?: ""}protect your next 25 minutes for something you chose."
+        else ->
+            "You are at ${usageDuration(todayMs)} today. Keep your attention intentional: finish one focused 25-minute block before you drift into another scroll."
+    }
 }
 
 @Composable
@@ -167,11 +215,12 @@ fun ScreenHabitsScreen(now: Long) {
     var loading by remember { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
 
-    // Re-check after returning from Android Settings without continuously querying usage data.
-    LaunchedEffect(now / 2_000L) {
+    // Check settings occasionally, but query the seven-day report less often to avoid
+    // repeatedly scanning usage history and wasting battery.
+    LaunchedEffect(now / 10_000L) {
         usageAccess = hasUsageStatsAccess(ctx)
     }
-    LaunchedEffect(usageAccess, now / 60_000L) {
+    LaunchedEffect(usageAccess, now / 300_000L) {
         if (!usageAccess) {
             report = null
             loading = false
@@ -196,7 +245,7 @@ fun ScreenHabitsScreen(now: Long) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 22.dp)
     ) {
-        PageHeader("Screen Habits", "A clearer picture of your phone time.")
+        PageHeader("Screen Habits", "Know where your attention goes.")
         if (!usageAccess) {
             LCard {
                 Eyebrow("Usage access")
@@ -204,7 +253,7 @@ fun ScreenHabitsScreen(now: Long) {
                 Text("See where your time goes", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Allow Usage Access so Let's Do It can measure app foreground time and build daily reports. This data stays on your phone; it is not uploaded.",
+                    "Allow Usage Access so Let's Do It can measure foreground app time and build daily reports. This data stays on your phone; it is not uploaded.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Muted
                 )
@@ -230,7 +279,7 @@ fun ScreenHabitsScreen(now: Long) {
                 Eyebrow("Screen time unavailable")
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Android did not return usage events. Check Usage Access in system settings and try again.",
+                    "Android did not return usage data. Check Usage Access in system settings and try again.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Muted
                 )
@@ -243,8 +292,32 @@ fun ScreenHabitsScreen(now: Long) {
             val data = report
             if (data != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatTile("Today", fmtMs(data.todayMs), Modifier.weight(1f))
-                    StatTile("7-day average", fmtMs(data.weekMs / 7L), Modifier.weight(1f))
+                    StatTile("Today", usageDuration(data.todayMs), Modifier.weight(1f))
+                    StatTile("7-day daily avg", usageDuration(data.weekMs / 7L), Modifier.weight(1f))
+                }
+                Spacer(Modifier.height(12.dp))
+                LCard {
+                    Eyebrow("Straight talk")
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        straightTalk(data),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Ink
+                    )
+                    if (data.weekMs > 0L && data.todayMs > 0L) {
+                        Spacer(Modifier.height(10.dp))
+                        val average = data.weekMs / 7L
+                        val ratio = if (average > 0L) data.todayMs.toDouble() / average.toDouble() else 0.0
+                        Text(
+                            when {
+                                ratio >= 1.25 -> "Today is running above your recent daily average. Notice the pattern and change the next choice."
+                                ratio <= 0.75 -> "You are below your recent daily average so far. Keep the rest of today intentional."
+                                else -> "You are around your recent daily average. Decide where the next hour goes instead of letting the phone decide."
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Muted
+                        )
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
                 LCard {
@@ -290,7 +363,7 @@ fun ScreenHabitsScreen(now: Long) {
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Daily totals are estimated from Android foreground events and may vary slightly by device.",
+                        "Daily totals use Android's app-usage records, with today's live events used to cover delayed updates. Totals may vary slightly by device.",
                         style = MaterialTheme.typography.labelSmall,
                         color = Muted
                     )
@@ -301,7 +374,7 @@ fun ScreenHabitsScreen(now: Long) {
                     Spacer(Modifier.height(12.dp))
                     if (data.apps.isEmpty()) {
                         Text(
-                            "No recent app usage events were returned. Keep Usage Access enabled and check again later.",
+                            "Android has not returned app-level history yet. Keep Usage Access enabled and check again shortly.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Muted
                         )
@@ -321,7 +394,7 @@ fun ScreenHabitsScreen(now: Long) {
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Text(fmtMs(app.weekMs), style = MaterialTheme.typography.titleSmall)
+                                Text(usageDuration(app.weekMs), style = MaterialTheme.typography.titleSmall)
                             }
                             Spacer(Modifier.height(5.dp))
                             Box(
@@ -336,7 +409,7 @@ fun ScreenHabitsScreen(now: Long) {
                             }
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Today · " + fmtMs(app.todayMs),
+                                "Today · " + usageDuration(app.todayMs),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Muted
                             )

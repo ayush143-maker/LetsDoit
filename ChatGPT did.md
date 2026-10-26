@@ -1,20 +1,26 @@
 # ChatGPT did
 
-This branch was created as a copy of `deep-focus-onboarding` at its existing head, then updated on the separate `ayush-screen-habits` branch.
+This branch was created as an exact copy of `deep-focus-onboarding` before changes were made on `ayush-screen-habits`.
 
-## Implemented
+## Screen Habits implementation
 
-- Added a native **Screen Habits** tab using Android's Usage Access and `UsageStatsManager`.
-- Added a seven-day screen-time chart, today's usage, seven-day daily average, and a ranked list of apps by recent foreground time.
-- Added a clear Usage Access settings entry point and an on-screen explanation that report data stays on-device.
-- Kept usage queries local; no network permission, backend, account, or remote analytics was added.
-- Added the tab to the existing bottom navigation and added a matching custom navigation icon.
-- Declared the protected Android usage-stats permission for system settings, incremented app version to 1.4.0 (versionCode 6), and enabled the existing APK workflow on pushes to this feature branch.
-- Updated the README with setup instructions and behavior notes.
+- Added a native **Screen Habits** tab using Android Usage Access.
+- Added a seven-day chart, today's total, daily average, and top-app foreground-time report.
+- Kept usage processing on-device; no backend, account, or network permission was added.
+- Added an APK workflow trigger for pushes to the feature branch.
+- Added explicit usage permission and set app version to 1.4.0 (version code 6).
+
+## Fixes after device feedback
+
+- Fixed app-duration labels to format milliseconds locally instead of accidentally passing minute values into another millisecond formatter.
+- Switched historical reports to Android's daily UsageStats aggregates, and use today's events as a live fallback so totals are less likely to remain at zero while app statistics are delayed.
+- Added a dynamic **Straight talk** card that reports what the current usage numbers actually show, in English, without pretending missing data is zero usage or inventing estimates.
+- Reduced usage-history refresh frequency to avoid rescanning history every minute.
+- Bumped app version to 1.4.1 (version code 7), so the corrected APK can be distinguished from the earlier build.
 
 ## Notes
 
-Screen time is estimated from Android foreground usage events and depends on OS-provided event history and Usage Access being enabled. The existing focus timer, tasks, Insights, and Shield code was retained.
+Screen time depends on Android usage history and Usage Access being enabled. Estimates may vary slightly by device. Existing Focus, Tasks, Insights, and Shield features were retained.
 
 Implementation credit: ChatGPT  
 Co-author credit: OpenAI
