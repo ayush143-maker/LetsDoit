@@ -118,14 +118,14 @@ private fun readScreenHabitsReport(ctx: Context, now: Long): ScreenHabitsReport 
     val event = UsageEvents.Event()
     var foregroundPackage: String? = null
     var foregroundSince = 0L
+    val eventTodayMs = mutableMapOf<String, Long>()
 
     fun recordForegroundSpan(endTime: Long) {
         val pkg = foregroundPackage ?: return
         val end = minOf(endTime, now)
         if (end > foregroundSince) {
             val duration = end - foregroundSince
-            val byDay = allDailyMs.getOrPut(pkg) { mutableMapOf() }
-            byDay[today] = maxOf(byDay[today] ?: 0L, duration + (byDay[today] ?: 0L))
+            eventTodayMs[pkg] = (eventTodayMs[pkg] ?: 0L) + duration
         }
         foregroundPackage = null
         foregroundSince = 0L
@@ -153,6 +153,12 @@ private fun readScreenHabitsReport(ctx: Context, now: Long): ScreenHabitsReport 
         }
     }
     recordForegroundSpan(now)
+    eventTodayMs.forEach { (pkg, eventDuration) ->
+        val byDay = allDailyMs.getOrPut(pkg) { mutableMapOf() }
+        // Event totals can overlap with Android's aggregated data, so use the larger
+        // complete estimate rather than summing the same foreground time twice.
+        byDay[today] = maxOf(byDay[today] ?: 0L, eventDuration)
+    }
 
     val days = dates.map { date ->
         UsageDay(date, allDailyMs.values.sumOf { it[date] ?: 0L })
