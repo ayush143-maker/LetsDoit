@@ -243,8 +243,8 @@ fun ScreenHabitsScreen(now: Long) {
             val data = report
             if (data != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatTile("Today", fmtMs(data.todayMs / 60_000L), Modifier.weight(1f))
-                    StatTile("7-day average", fmtMs(data.weekMs / 7L / 60_000L), Modifier.weight(1f))
+                    StatTile("Today", fmtMs(data.todayMs), Modifier.weight(1f))
+                    StatTile("7-day average", fmtMs(data.weekMs / 7L), Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(12.dp))
                 LCard {
@@ -321,7 +321,7 @@ fun ScreenHabitsScreen(now: Long) {
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Text(fmtMs(app.weekMs / 60_000L), style = MaterialTheme.typography.titleSmall)
+                                Text(fmtMs(app.weekMs), style = MaterialTheme.typography.titleSmall)
                             }
                             Spacer(Modifier.height(5.dp))
                             Box(
@@ -336,7 +336,7 @@ fun ScreenHabitsScreen(now: Long) {
                             }
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Today · " + fmtMs(app.todayMs / 60_000L),
+                                "Today · " + fmtMs(app.todayMs),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Muted
                             )
