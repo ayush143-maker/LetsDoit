@@ -81,6 +81,36 @@ object NavIcons {
         }
     }
 
+    // Phone outline with usage bars
+    val Habits: ImageVector by lazy {
+        navIcon("nav_habits") {
+            stroked {
+                moveTo(8f, 2.5f)
+                lineTo(16f, 2.5f)
+                curveTo(17.1f, 2.5f, 18f, 3.4f, 18f, 4.5f)
+                lineTo(18f, 19.5f)
+                curveTo(18f, 20.6f, 17.1f, 21.5f, 16f, 21.5f)
+                lineTo(8f, 21.5f)
+                curveTo(6.9f, 21.5f, 6f, 20.6f, 6f, 19.5f)
+                lineTo(6f, 4.5f)
+                curveTo(6f, 3.4f, 6.9f, 2.5f, 8f, 2.5f)
+                close()
+            }
+            stroked(1.6f) {
+                moveTo(9f, 15.5f)
+                lineTo(9f, 12.5f)
+                moveTo(12f, 15.5f)
+                lineTo(12f, 9.5f)
+                moveTo(15f, 15.5f)
+                lineTo(15f, 7.5f)
+            }
+            stroked(1.4f) {
+                moveTo(10f, 18.5f)
+                lineTo(14f, 18.5f)
+            }
+        }
+    }
+
     // Shield
     val Shield: ImageVector by lazy {
         navIcon("nav_shield") {
