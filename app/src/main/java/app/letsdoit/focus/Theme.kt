@@ -1,6 +1,7 @@
 package app.letsdoit.focus
 
 import android.content.Context
+import android.graphics.Typeface
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +38,9 @@ val RCard = RoundedCornerShape(12.dp)
 val RBox = RoundedCornerShape(10.dp)
 val RSmall = RoundedCornerShape(8.dp)
 
-val LocalMono = staticCompositionLocalOf<FontFamily> { FontFamily.Monospace }
+// Font used for every running timer / big digit (name kept for compatibility).
+// The system medium sans has clean, evenly spaced digits, so the clock never jitters.
+val LocalMono = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
 
 private fun loadFamily(
     ctx: Context,
@@ -79,16 +82,7 @@ fun LdiTheme(content: @Composable () -> Unit) {
             FontFamily.SansSerif
         )
     }
-    val mono = remember {
-        loadFamily(
-            ctx,
-            listOf(
-                "IBMPlexMono-Regular.ttf" to FontWeight.Normal,
-                "IBMPlexMono-Medium.ttf" to FontWeight.Medium
-            ),
-            FontFamily.Monospace
-        )
-    }
+    val timerFont = remember { FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL)) }
     val typo = remember(sans) {
         Typography(
             displayLarge = st(sans, 40, FontWeight.Bold, -1.2),
@@ -128,7 +122,7 @@ fun LdiTheme(content: @Composable () -> Unit) {
         large = RCard,
         extraLarge = RCard
     )
-    CompositionLocalProvider(LocalMono provides mono) {
+    CompositionLocalProvider(LocalMono provides timerFont) {
         MaterialTheme(colorScheme = scheme, typography = typo, shapes = shapes) {
             Surface(Modifier.fillMaxSize(), color = Cream, contentColor = Ink) {
                 content()

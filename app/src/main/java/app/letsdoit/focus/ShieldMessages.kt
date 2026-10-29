@@ -1,54 +1,54 @@
 package app.letsdoit.focus
 
-// Harsh-but-useful pushback shown when a blocked app is opened during a focus session.
+// Sharp but useful pushback shown when a blocked app is opened during a focus session.
 // Placeholders: {app} blocked app name, {task} the session purpose, {left} time left (mm:ss).
 object ShieldMessages {
     data class Msg(val title: String, val body: String)
 
     private val titles = listOf(
-        "{app}? Seriously?",
-        "Phir se {app}?",
-        "Pakda gaya.",
-        "Nahi. Abhi nahi.",
-        "Ye kaam nahi hai.",
-        "Dhyan kahan hai?",
-        "Ek aur bahana?",
+        "{app}? Really?",
+        "Again with {app}?",
         "Caught you.",
-        "Wapas jao.",
-        "Kitni baar?",
+        "Not now.",
+        "This isn't the work.",
+        "Where did your focus go?",
+        "Another excuse?",
+        "Back to it.",
+        "How many times?",
         "Not this again.",
-        "Really, {app}?"
+        "Eyes up.",
+        "Nice try."
     )
 
     private val withTask = listOf(
-        "Tumne kaha tha \"{task}\" karoge. {app} kholna us kaam ka hissa nahi hai. Wapas jao.",
-        "{task} adhura pada hai aur tum {app} mein ghus gaye. Ye rest nahi, procrastination hai.",
-        "{left} baaki hain. {task} khud nahi hoga, aur {app} kahin nahi ja raha.",
-        "Har baar {app} kholte ho, {task} thoda aur door chala jata hai. Aaj bhi wahi kahani?",
-        "Bade plan banate ho, phir {app} pe 20 minute gawa dete ho. {task} pe wapas aao.",
-        "Sach bolo: {app} mein kya zaroori tha? Kuch nahi. {task} zaroori hai.",
-        "Aaj ka tum {task} poora dekhna chahta hai, {app} ka scroll nahi.",
-        "{task}. Bas itna. {left} bacha hai. Kaam se bhaago mat.",
-        "You said you would do: {task}. Opening {app} is just avoiding it with extra steps.",
+        "You said you'd work on {task}. Opening {app} isn't part of that. Go back.",
+        "{task} is waiting, and you've wandered into {app}. That isn't rest, it's avoidance.",
+        "{left} left. {task} won't finish itself, and {app} isn't going anywhere.",
+        "Every time you open {app}, {task} drifts a little further away. Same story today?",
+        "You make big plans, then lose twenty minutes to {app}. Get back to {task}.",
+        "Be honest: what did you actually need in {app}? Nothing. {task} is what matters.",
+        "Today's version of you wants {task} done, not another scroll through {app}.",
+        "{task}. That's all you have to do. {left} left. Don't run from it.",
+        "Opening {app} is just avoiding {task} with extra steps.",
         "Nobody ever felt proud of the hours they spent in {app}. Go finish {task}.",
-        "{task} is still waiting. {app} will still be there once you have earned it.",
-        "{app} comfortable lagta hai, isiliye dangerous hai. {task} mushkil lagta hai, isiliye zaroori hai.",
-        "Yahi wo aadat hai jo tumhe peeche rakhti hai. {task} pe wapas jao, {left} bacha hai."
+        "{task} is still waiting. {app} will still be there once you've earned it.",
+        "{app} feels comfortable, which is exactly why it's dangerous. {task} feels hard, which is exactly why it matters.",
+        "This is the habit that holds you back. Return to {task}. {left} left."
     )
 
     private val generic = listOf(
-        "Tumne focus shuru kiya tha, {app} dekhne ke liye nahi. {left} baaki hain. Kaam pe wapas.",
-        "{app} tumhara kaam nahi hai. Jo karna tha wo karo.",
-        "Ek aur tab, ek aur scroll, phir ek ghanta gaya. Mat karo.",
-        "Discipline ka matlab hai mood na ho tab bhi karna. Abhi wahi moment hai.",
-        "Tum phir bhaag rahe ho. Bhaagna band karo, bas {left} aur.",
+        "You started this session to work, not to browse {app}. {left} left. Get back to it.",
+        "{app} isn't what you came here to do. Go do what you planned.",
+        "One more tab, one more scroll, and an hour is gone. Don't.",
+        "Discipline means doing it even when you're not in the mood. This is that moment.",
+        "You're running again. Stop running. Just {left} more.",
         "Your future self is watching you open {app} right now. Impressed? Probably not.",
-        "Boredom ka ilaaj {app} nahi hai. Kaam hai.",
-        "Distraction is the easiest thing in the world. That is exactly why it is not impressive.",
+        "Boredom isn't cured by {app}. It's cured by work.",
+        "Distraction is the easiest thing in the world. That's exactly why it isn't impressive.",
         "{left} left. You can survive that without {app}. Get back to work.",
-        "Kisi ne kabhi nahi kaha 'kaash maine aur scroll kiya hota'. Kaam pe lago.",
-        "Ye shield tumne khud lagaya tha kyunki tumhe pata tha tum yahi karoge. Ab saabit karo ki galat the.",
-        "Itni mehnat se focus shuru kiya aur ek tap mein barbaad? {app} baad mein."
+        "No one has ever wished they had scrolled more. Get to work.",
+        "You turned this shield on because you knew you'd do exactly this. Prove yourself wrong.",
+        "You worked hard to start this session. Don't throw it away on {app}. It can wait."
     )
 
     private var lastTitle = ""

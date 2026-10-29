@@ -57,7 +57,7 @@ data class Block(val ts: Long, val pkg: String)
 
 data class Prefs(
     val defaultMin: Int = 25,
-    val goalMin: Int = 60,
+    val goalMin: Int = 240,
     val shieldOn: Boolean = false,
     val blocked: Set<String> = emptySet(),
     val alerts: Boolean = true,
@@ -149,7 +149,7 @@ object Repo {
 
     private fun readPrefs(): Prefs = Prefs(
         defaultMin = sp.getInt("defaultMin", 25),
-        goalMin = sp.getInt("goalMin", 60),
+        goalMin = sp.getInt("goalMin", 240),
         shieldOn = sp.getBoolean("shieldOn", false),
         blocked = (sp.getStringSet("blocked", null) ?: emptySet<String>()).toSet(),
         alerts = sp.getBoolean("alerts", true),
@@ -225,6 +225,17 @@ object Repo {
             .putBoolean("alerts", p.alerts)
             .putBoolean("vibrate", p.vibrate)
             .apply()
+    }
+
+    // Replaces everything with data from a backup file (see Backup.kt).
+    fun restore(t: List<Task>, s: List<Session>, b: List<Block>, p: Prefs) {
+        tasks.value = t
+        saveTasks()
+        sessions.value = s.takeLast(1000)
+        saveSessions()
+        blocks.value = b.takeLast(500)
+        saveBlocks()
+        updatePrefs { p }
     }
 
     fun addTask(title: String) {

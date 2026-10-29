@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -43,6 +44,7 @@ import kotlinx.coroutines.delay
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UiState.init(this)
         val transparent = android.graphics.Color.TRANSPARENT
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(transparent, transparent),
@@ -70,39 +72,62 @@ fun MainApp() {
             delay(500L)
         }
     }
+    val onboarded by UiState.onboarded.collectAsState()
+    val dismissed by UiState.dismissedId.collectAsState()
+    val active by Repo.active.collectAsState()
+    val last by Repo.lastResult.collectAsState()
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Cream)
-            .imePadding()
-    ) {
-        Box(Modifier.weight(1f)) {
-            when (tab) {
-                0 -> FocusScreen(now, preset, { preset = null }, { tab = 3 })
-                1 -> TasksScreen { id ->
-                    preset = id
-                    tab = 0
+    val a = active
+    val l = last
+    val celebrate = l != null && l.completed && l.id != dismissed && a == null
+
+    if (!onboarded) {
+        OnboardingScreen(now) { UiState.finishOnboarding() }
+    } else if (a != null) {
+        DeepFocusScreen(a, now)
+    } else if (l != null && celebrate) {
+        CompletionScreen(l) { UiState.dismissedId.value = l.id }
+    } else {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(Cream)
+                .imePadding()
+        ) {
+            Box(Modifier.weight(1f)) {
+                when (tab) {
+                    0 -> FocusScreen(now, preset, { preset = null }, { tab = 4 })
+                    1 -> TasksScreen { id ->
+                        preset = id
+                        tab = 0
+                    }
+                    2 -> InsightsScreen(now)
+                    3 -> HabitsScreen(now) { tab = 0 }
+                    else -> ShieldTab(now)
                 }
-                2 -> InsightsScreen(now)
-                else -> ShieldSetupScreen(now)
             }
+            BottomBar(tab) { tab = it }
         }
-        BottomBar(tab) { tab = it }
     }
 }
 
 @Composable
 fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
-    val labels = listOf("Focus", "Tasks", "Insights", "Shield")
-    val icons = listOf(NavIcons.Focus, NavIcons.Tasks, NavIcons.Insights, NavIcons.Shield)
+    val labels = listOf("Focus", "Tasks", "Insights", "Habits", "Shield")
+    val icons = listOf(
+        NavIcons.Focus,
+        NavIcons.Tasks,
+        NavIcons.Insights,
+        HabitIcons.Flame,
+        NavIcons.Shield
+    )
     Column(Modifier.background(Sand)) {
         HorizontalDivider(color = Line)
         Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
             labels.forEachIndexed { i, label ->
                 val selected = tab == i
@@ -116,7 +141,7 @@ fun BottomBar(tab: Int, onTab: (Int) -> Unit) {
                 ) {
                     Box(
                         Modifier
-                            .width(56.dp)
+                            .width(52.dp)
                             .height(30.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (selected) AccentSoft else Color.Transparent),

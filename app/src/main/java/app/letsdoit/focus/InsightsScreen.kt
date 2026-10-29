@@ -1,13 +1,11 @@
 package app.letsdoit.focus
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -51,7 +48,6 @@ fun InsightsScreen(now: Long) {
     val weekStart = today.minusDays(6)
     val weekBlocks = blocks.filter { !Stats.day(it.ts).isBefore(weekStart) }
     val topPkg = weekBlocks.groupingBy { it.pkg }.eachCount().maxByOrNull { it.value }?.key
-    val days28 = (27 downTo 0).map { today.minusDays(it.toLong()) }
 
     Column(
         Modifier
@@ -60,11 +56,7 @@ fun InsightsScreen(now: Long) {
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 22.dp)
     ) {
-        Spacer(Modifier.height(18.dp))
-        Eyebrow("Insights")
-        Spacer(Modifier.height(6.dp))
-        Text("Time well spent.", style = MaterialTheme.typography.displaySmall)
-        Spacer(Modifier.height(20.dp))
+        PageHeader("Insights", "See where your time really goes.")
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatTile("Day streak", "$streak", Modifier.weight(1f))
@@ -107,8 +99,8 @@ fun InsightsScreen(now: Long) {
                             Modifier
                                 .fillMaxWidth()
                                 .height(h.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(if (d == today) Accent else Accent.copy(alpha = 0.28f))
+                                .clip(RSmall)
+                                .background(if (d == today) Accent else Accent.copy(alpha = 0.3f))
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -128,38 +120,7 @@ fun InsightsScreen(now: Long) {
         }
 
         Spacer(Modifier.height(14.dp))
-        LCard {
-            Eyebrow("Last 28 days")
-            Spacer(Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                days28.chunked(7).forEach { rowDays ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        rowDays.forEach { d ->
-                            val m = byDay[d] ?: 0L
-                            val f = (m.toFloat() / prefs.goalMin.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
-                            val cell = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(
-                                    if (m == 0L) Line.copy(alpha = 0.6f)
-                                    else Accent.copy(alpha = 0.2f + 0.8f * f)
-                                )
-                            Box(
-                                if (d == today) cell.border(1.5.dp, Ink, RoundedCornerShape(5.dp))
-                                else cell
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Darker means closer to your ${prefs.goalMin} min daily goal.",
-                style = MaterialTheme.typography.labelSmall,
-                color = Muted
-            )
-        }
+        MonthCard(byDay, sessions, prefs.goalMin)
 
         Spacer(Modifier.height(14.dp))
         LCard {
